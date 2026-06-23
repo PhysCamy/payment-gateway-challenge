@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
+using PaymentGateway.Api.Interfaces;
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
@@ -11,10 +12,14 @@ namespace PaymentGateway.Api.Controllers;
 public class PaymentsController : Controller
 {
     private readonly PaymentsRepository _paymentsRepository;
+    private readonly IPaymentRequestValidator _validator;
 
-    public PaymentsController(PaymentsRepository paymentsRepository)
+    public PaymentsController(
+        PaymentsRepository paymentsRepository,
+        IPaymentRequestValidator validator)
     {
         _paymentsRepository = paymentsRepository;
+        _validator = validator;
     }
 
     [HttpGet("{id:guid}")]
@@ -25,12 +30,18 @@ public class PaymentsController : Controller
         return new OkObjectResult(payment);
     }
 
-    // Layer 2 (domain validation), the bank call and persistence are implemented in
-    // later phases. For now the action exists so Layer 1 (model binding + data
-    // annotations) runs: [ApiController] returns 400 automatically when binding fails.
+    // Layer 1 (model binding + data annotations) runs before this action: [ApiController]
+    // returns 400 automatically when binding fails. Layer 2 (domain validation) runs here.
+    // The bank call and persistence are implemented in later phases.
     [HttpPost]
     public ActionResult<PostPaymentResponse> PostPayment(PostPaymentRequest request)
     {
+        var validation = _validator.Validate(request);
+        if (!validation.IsValid)
+        {
+            return BadRequest(new RejectedPaymentResponse(validation.Errors));
+        }
+
         return Ok();
     }
 }

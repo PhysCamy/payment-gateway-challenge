@@ -51,8 +51,10 @@ public class SchemaValidationTests
     public static IEnumerable<object[]> AcceptedPayloads()
     {
         yield return [ValidPayload()];
-        yield return [With("card_number", new string('2', 14))];
-        yield return [With("card_number", new string('2', 19))];
+        // All-zeros is Luhn-valid at any length, so these exercise the 14/19 length
+        // boundary at Layer 1 while still clearing Layer 2 to reach the 200.
+        yield return [With("card_number", new string('0', 14))];
+        yield return [With("card_number", new string('0', 19))];
         yield return [With("expiry_month", 1)];
         yield return [With("expiry_month", 12)];
         yield return [With("currency", "USD")];

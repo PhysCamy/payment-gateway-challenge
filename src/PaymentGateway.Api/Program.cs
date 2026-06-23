@@ -1,7 +1,9 @@
 using System.Text.Json.Serialization;
 
+using PaymentGateway.Api.Interfaces;
 using PaymentGateway.Api.Models;
 using PaymentGateway.Api.Services;
+using PaymentGateway.Api.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<PaymentsRepository>();
+builder.Services.AddSingleton<IPaymentRequestValidator, PostPaymentRequestValidator>();
 
 var app = builder.Build();
 
