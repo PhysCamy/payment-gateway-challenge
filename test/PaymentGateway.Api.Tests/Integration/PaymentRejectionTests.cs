@@ -17,8 +17,13 @@ namespace PaymentGateway.Api.Tests.Integration;
 /// </summary>
 public class PaymentRejectionTests
 {
-    private readonly HttpClient _client =
-        new PaymentGatewayApplicationFactory().CreateClient();
+    private readonly HttpClient _client;
+
+    public PaymentRejectionTests()
+    {
+        _client = new PaymentGatewayApplicationFactory().CreateClient();
+        _client.DefaultRequestHeaders.Add("Idempotency-Key", Guid.NewGuid().ToString());
+    }
 
     [Fact]
     public async Task DomainInvalidRequest_Returns400RejectedEnvelopeWithoutId()

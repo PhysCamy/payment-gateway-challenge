@@ -4,7 +4,12 @@ using System.Text.Json.Serialization;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 
+using Moq;
+
 using PaymentGateway.Api.Controllers;
+using PaymentGateway.Api.Interfaces;
+using PaymentGateway.Api.Models.Requests;
+using PaymentGateway.Api.Models.Responses;
 
 namespace PaymentGateway.Api.Tests.Integration;
 
@@ -12,14 +17,25 @@ namespace PaymentGateway.Api.Tests.Integration;
 /// Schema validation is enforced by the ASP.NET pipeline — model binding, data
 /// annotations and JSON deserialisation — before the controller action runs, so these
 /// are integration tests driven through <see cref="WebApplicationFactory{T}"/>. A request
-/// that clears validation reaches the (stub) action and returns 200; an invalid request is
-/// rejected with 400 and a <c>ValidationProblemDetails</c> body whose messages name the
-/// offending field and constraint in the API's snake_case vocabulary.
+/// that clears validation reaches the action (with the bank stubbed to authorize) and
+/// returns 200; an invalid request is rejected with 400 and a <c>ValidationProblemDetails</c>
+/// body whose messages name the offending field and constraint in the API's snake_case
+/// vocabulary. Every request carries an <c>Idempotency-Key</c> so the required-header check
+/// is satisfied and the body validation is exercised in isolation.
 /// </summary>
 public class SchemaValidationTests
 {
-    private readonly HttpClient _client =
-        new PaymentGatewayApplicationFactory().CreateClient();
+    private readonly HttpClient _client;
+
+    public SchemaValidationTests()
+    {
+        var bank = new Mock<IBankService>();
+        bank.Setup(b => b.ProcessPaymentAsync(It.IsAny<BankSimulatorRequest>()))
+            .ReturnsAsync(new BankSimulatorResponse { Authorized = true });
+
+        _client = new PaymentGatewayApplicationFactory(bankService: bank.Object).CreateClient();
+        _client.DefaultRequestHeaders.Add("Idempotency-Key", Guid.NewGuid().ToString());
+    }
 
     private sealed record ValidationProblem(
         [property: JsonPropertyName("errors")] Dictionary<string, string[]> Errors);
