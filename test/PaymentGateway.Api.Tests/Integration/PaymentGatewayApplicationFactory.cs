@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PaymentGateway.Api.Controllers;
 using PaymentGateway.Api.Interfaces;
 
-namespace PaymentGateway.Api.Tests;
+namespace PaymentGateway.Api.Tests.Integration;
 
 /// <summary>
 /// Shared <see cref="WebApplicationFactory{T}"/> for the integration tests. Sets the

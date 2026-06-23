@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 using PaymentGateway.Api.Controllers;
 
-namespace PaymentGateway.Api.Tests;
+namespace PaymentGateway.Api.Tests.Integration;
 
 /// <summary>
 /// Schema validation is enforced by the ASP.NET pipeline — model binding, data

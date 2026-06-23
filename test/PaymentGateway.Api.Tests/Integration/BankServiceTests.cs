@@ -1,7 +1,7 @@
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Services;
 
-namespace PaymentGateway.Api.Tests;
+namespace PaymentGateway.Api.Tests.Integration;
 
 /// <summary>
 /// Exercises <see cref="BankService"/> against the real Mountebank bank simulator on
