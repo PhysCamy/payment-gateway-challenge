@@ -4,4 +4,6 @@ global:
 scrape_configs:
   - job_name: payment-gateway
     static_configs:
-      - targets: ['host.docker.internal:5000']
+      # The gateway runs as a compose service, reachable by name on the shared network.
+      # If you instead run the API on the host via `dotnet run`, use host.docker.internal:5067.
+      - targets: ['payment-gateway:5067']

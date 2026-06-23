@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging.Abstractions;
+
 using PaymentGateway.Api.Models;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
@@ -6,7 +8,7 @@ namespace PaymentGateway.Api.Tests.Unit;
 
 public class PaymentsRepositoryTests
 {
-    private readonly PaymentsRepository _repository = new();
+    private readonly PaymentsRepository _repository = new(NullLogger<PaymentsRepository>.Instance);
 
     private static PostPaymentResponse APayment(Guid? id = null) => new()
     {

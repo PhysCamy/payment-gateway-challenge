@@ -17,6 +17,12 @@ public sealed class PaymentsRepository : IPaymentsRepository
     // Used as a concurrent set: .NET has no ConcurrentHashSet, so a ConcurrentDictionary
     // with a throwaway value is the canonical idiom. Only the keys carry meaning.
     private readonly ConcurrentDictionary<string, byte> _inFlight = new();
+    private readonly ILogger<PaymentsRepository> _logger;
+
+    public PaymentsRepository(ILogger<PaymentsRepository> logger)
+    {
+        _logger = logger;
+    }
 
     public bool TryBeginProcessing(string idempotencyKey)
     {
@@ -34,6 +40,10 @@ public sealed class PaymentsRepository : IPaymentsRepository
         _payments[payment.Id] = payment;
         _completed[idempotencyKey] = payment;
         _inFlight.TryRemove(idempotencyKey, out _);
+
+        // last_four_digits only — never the full PAN. PostPaymentResponse holds no PAN by design.
+        _logger.LogInformation(
+            "Payment persisted: {PaymentId} {Status}", payment.Id, payment.Status);
     }
 
     public void CancelProcessing(string idempotencyKey)

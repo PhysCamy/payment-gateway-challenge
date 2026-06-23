@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 using PaymentGateway.Api.Models;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
@@ -31,7 +33,7 @@ public class PaymentLifecycleIntegrationTests
     private static readonly JsonSerializerOptions JsonOptions =
         new() { Converters = { new JsonStringEnumConverter() } };
 
-    private readonly PaymentsRepository _repository = new();
+    private readonly PaymentsRepository _repository = new(NullLogger<PaymentsRepository>.Instance);
     private readonly HttpClient _client;
 
     public PaymentLifecycleIntegrationTests()

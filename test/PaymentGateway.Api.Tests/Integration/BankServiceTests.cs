@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging.Abstractions;
+
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Services;
 
@@ -34,7 +36,7 @@ public class BankServiceTests
             client.Timeout = timeout.Value;
         }
 
-        return new BankService(client);
+        return new BankService(client, NullLogger<BankService>.Instance);
     }
 
     [Fact]

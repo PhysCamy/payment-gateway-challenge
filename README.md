@@ -20,29 +20,101 @@ Feel free to change the structure of the solution, use a different test library 
 ## Running the application
 
 ### Prerequisites
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Docker](https://www.docker.com/) (for the bank simulator)
+- [Docker](https://www.docker.com/) — runs the whole stack
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) — only needed to run the API
+  outside Docker or to run the tests
 
-### 1. Start the bank simulator
+### Run everything with one command
 
 ```bash
-docker-compose up bank_simulator -d
+docker-compose up --build
 ```
 
-### 2. Run the API
+This builds and starts the entire stack — the API, the bank simulator, and the observability
+services (Prometheus, Loki, Grafana). Add `-d` to run it detached. The API is available at:
+
+- API: `http://localhost:5067`
+- Metrics: `http://localhost:5067/metrics`
+
+(`--build` is only needed when the API source has changed; plain `docker-compose up` reuses
+the existing image.)
+
+### Running the API outside Docker (optional, for development)
+
+To iterate on the API with a debugger or hot reload, start the supporting services and run the
+API on the host:
 
 ```bash
+docker-compose up -d bank_simulator prometheus loki grafana
 cd src/PaymentGateway.Api
 dotnet run
 ```
 
-The API will be available at:
+Run this way the API also exposes HTTPS and Swagger:
 - HTTP: `http://localhost:5067`
 - HTTPS: `https://localhost:7092`
 - Swagger UI: `https://localhost:7092/swagger`
 
+For Prometheus to scrape the host process, point its target at `host.docker.internal:5067`
+in `prometheus/prometheus.yml` (see the note in that file).
+
 ### Running the tests
+
+The default run excludes the integration suite (which needs the bank simulator running):
+
+```bash
+dotnet test --filter "Category!=Integration"
+```
+
+To run the integration tests as well, start the bank simulator first
+(`docker-compose up -d bank_simulator`), then:
 
 ```bash
 dotnet test
 ```
+
+## Observability
+
+The gateway emits structured logs (Serilog → Loki) and Prometheus metrics (prometheus-net),
+visualised in Grafana. Everything comes up with `docker-compose up`; no extra steps.
+
+| Tool | URL | Purpose |
+|---|---|---|
+| Raw metrics | `http://localhost:5067/metrics` | Prometheus exposition format, scraped by Prometheus |
+| Prometheus | `http://localhost:9090` | Query metrics directly (e.g. `rate(bank_requests_total[1m])`) |
+| Grafana | `http://localhost:3000` | Dashboards over both metrics and logs (login `admin` / `admin`) |
+
+Prometheus scrapes the gateway over the compose network at `payment-gateway:5067`. If you run
+the API on the host instead (see above), point the target at `host.docker.internal:5067`.
+
+### Grafana dashboard
+
+Data sources (Prometheus + Loki) and the **Payment Gateway** dashboard are provisioned
+automatically — no manual setup. Open Grafana, log in, and find it under
+**Dashboards → Payment Gateway**. It has four panels:
+
+| Panel | Source | Shows |
+|---|---|---|
+| API Request Rate | Prometheus | Requests/sec per route and HTTP status code |
+| Bank Request Outcomes | Prometheus | Bank calls/sec by outcome (`authorized`, `declined`, `unreachable`) |
+| Response Status Distribution | Prometheus | Pie chart of HTTP status codes over the last 5 minutes |
+| Application Logs | Loki | Live structured log stream, newest first |
+
+### Metrics exposed
+
+| Metric | Type | Labels | Source |
+|---|---|---|---|
+| `http_requests_received_total` | Counter | `method`, `route`, `code` | `UseHttpMetrics()` |
+| `http_request_duration_seconds` | Histogram | `method`, `route`, `code` | `UseHttpMetrics()` |
+| `bank_requests_total` | Counter | `outcome` | `BankService` |
+
+### Logs
+
+Structured events are written to the console and pushed to Loki under the label
+`app="payment-gateway"`. In Grafana's **Explore** view, select the Loki data source and query
+`{app="payment-gateway"}`. Key events: bank request dispatched/received, bank unreachable,
+payment persisted, and payment rejected. Per PCI, card numbers and CVVs are never logged —
+only `last_four_digits`.
+
+The Loki endpoint defaults to `http://localhost:3100`; override it with the
+`Observability__LokiUri` environment variable (or the `Observability:LokiUri` config key).
