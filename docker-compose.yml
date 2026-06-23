@@ -12,4 +12,35 @@ services:
       - type: bind
         source: ./imposters
         target: /imposters
-      
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.51.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - type: bind
+        source: ./prometheus
+        target: /etc/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  loki:
+    container_name: loki
+    image: grafana/loki:2.9.0
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:10.4.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - type: bind
+        source: ./grafana/provisioning
+        target: /etc/grafana/provisioning
+    depends_on:
+      - prometheus
+      - loki

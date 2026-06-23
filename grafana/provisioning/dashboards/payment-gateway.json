@@ -1,0 +1,88 @@
+{
+  "title": "Payment Gateway",
+  "uid": "payment-gateway",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "API Request Rate",
+      "description": "Requests per second broken down by route and HTTP status code.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps" },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(http_requests_received_total[1m])",
+          "legendFormat": "{{route}} ({{code}})"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Bank Request Outcomes",
+      "description": "Requests per second sent to the bank simulator, broken down by outcome.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps" },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(bank_requests_total[1m])",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "piechart",
+      "title": "Response Status Distribution",
+      "description": "Share of HTTP response codes over the last 5 minutes.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (code) (increase(http_requests_received_total[5m]))",
+          "legendFormat": "HTTP {{code}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "logs",
+      "title": "Application Logs",
+      "description": "Live structured log stream from the gateway.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": {
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true,
+        "enableLogDetails": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{app=\"payment-gateway\"}"
+        }
+      ]
+    }
+  ]
+}
