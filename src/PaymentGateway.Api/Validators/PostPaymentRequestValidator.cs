@@ -1,6 +1,7 @@
 using LuhnDotNet.Algorithm.Luhn;
 
 using PaymentGateway.Api.Interfaces;
+using PaymentGateway.Api.Models;
 using PaymentGateway.Api.Models.Requests;
 
 namespace PaymentGateway.Api.Validators;

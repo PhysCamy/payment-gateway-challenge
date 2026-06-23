@@ -14,6 +14,8 @@ public sealed class PaymentsRepository : IPaymentsRepository
 {
     private readonly ConcurrentDictionary<Guid, PostPaymentResponse> _payments = new();
     private readonly ConcurrentDictionary<string, PostPaymentResponse> _completed = new();
+    // Used as a concurrent set: .NET has no ConcurrentHashSet, so a ConcurrentDictionary
+    // with a throwaway value is the canonical idiom. Only the keys carry meaning.
     private readonly ConcurrentDictionary<string, byte> _inFlight = new();
 
     public bool TryBeginProcessing(string idempotencyKey)
