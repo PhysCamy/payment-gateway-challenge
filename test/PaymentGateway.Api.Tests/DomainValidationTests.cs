@@ -20,7 +20,7 @@ namespace PaymentGateway.Api.Tests;
 public class DomainValidationTests
 {
     private readonly HttpClient _client =
-        new WebApplicationFactory<PaymentsController>().CreateClient();
+        new PaymentGatewayApplicationFactory().CreateClient();
 
     private sealed record Rejection(
         [property: JsonPropertyName("status")] string Status,

@@ -19,7 +19,7 @@ namespace PaymentGateway.Api.Tests;
 public class SchemaValidationTests
 {
     private readonly HttpClient _client =
-        new WebApplicationFactory<PaymentsController>().CreateClient();
+        new PaymentGatewayApplicationFactory().CreateClient();
 
     private sealed record ValidationProblem(
         [property: JsonPropertyName("errors")] Dictionary<string, string[]> Errors);

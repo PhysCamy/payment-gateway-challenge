@@ -1,0 +1,35 @@
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+
+using PaymentGateway.Api.Controllers;
+using PaymentGateway.Api.Services;
+
+namespace PaymentGateway.Api.Tests;
+
+/// <summary>
+/// Shared <see cref="WebApplicationFactory{T}"/> for the integration tests. Sets the
+/// <c>https_port</c> so HTTPS redirection resolves to a concrete URL under test, and
+/// optionally swaps in a pre-seeded <see cref="PaymentsRepository"/> so a test can
+/// arrange the data a request will read back.
+/// </summary>
+public class PaymentGatewayApplicationFactory : WebApplicationFactory<PaymentsController>
+{
+    private readonly PaymentsRepository? _paymentsRepository;
+
+    public PaymentGatewayApplicationFactory(PaymentsRepository? paymentsRepository = null)
+    {
+        _paymentsRepository = paymentsRepository;
+    }
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseSetting("https_port", "443");
+
+        if (_paymentsRepository is not null)
+        {
+            builder.ConfigureServices(services =>
+                services.AddSingleton(_paymentsRepository));
+        }
+    }
+}

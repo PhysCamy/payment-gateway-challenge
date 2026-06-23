@@ -2,10 +2,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 
-using PaymentGateway.Api.Controllers;
 using PaymentGateway.Api.Models;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
@@ -36,11 +33,7 @@ public class PaymentsControllerTests
         var paymentsRepository = new PaymentsRepository();
         paymentsRepository.Add(payment);
 
-        var webApplicationFactory = new WebApplicationFactory<PaymentsController>();
-        var client = webApplicationFactory.WithWebHostBuilder(builder =>
-            builder.ConfigureServices(services => ((ServiceCollection)services)
-                .AddSingleton(paymentsRepository)))
-            .CreateClient();
+        var client = new PaymentGatewayApplicationFactory(paymentsRepository).CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/Payments/{payment.Id}");
@@ -55,9 +48,8 @@ public class PaymentsControllerTests
     public async Task Returns404IfPaymentNotFound()
     {
         // Arrange
-        var webApplicationFactory = new WebApplicationFactory<PaymentsController>();
-        var client = webApplicationFactory.CreateClient();
-        
+        var client = new PaymentGatewayApplicationFactory().CreateClient();
+
         // Act
         var response = await client.GetAsync($"/api/Payments/{Guid.NewGuid()}");
         
