@@ -14,9 +14,22 @@
                 }
             },
             "stubs": [{
+                    "predicates": [
+                        { "equals": { "method": "POST", "path": "/payments" } },
+                        { "equals": { "body": { "card_number": "0000000000000000" } } }
+                    ],
+                    "responses": [{
+                            "is": {
+                                "statusCode": 200,
+                                "body": { "authorized": true, "authorization_code": "slow-response" }
+                            },
+                            "behaviors": [{ "wait": 2000 }]
+                        }
+                    ]
+                }, {
                     "predicates": [{
 						"and": [
-							{ "equals": { "method": "POST", "path": "/payments" } }, 
+							{ "equals": { "method": "POST", "path": "/payments" } },
 							{ "or": [
 								{ "exists": {"body": {"card_number": false}} },
 								{ "exists": {"body": {"expiry_date": false}} },

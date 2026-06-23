@@ -1,18 +1,53 @@
-﻿using PaymentGateway.Api.Models.Responses;
+using System.Collections.Concurrent;
+
+using PaymentGateway.Api.Interfaces;
+using PaymentGateway.Api.Models.Responses;
 
 namespace PaymentGateway.Api.Services;
 
-public class PaymentsRepository
+/// <summary>
+/// Sole implementation of <see cref="IPaymentsRepository"/>. Backed by
+/// <see cref="ConcurrentDictionary{TKey,TValue}"/> instances, so all operations are atomic
+/// and no external locking is required.
+/// </summary>
+public sealed class PaymentsRepository : IPaymentsRepository
 {
-    public List<PostPaymentResponse> Payments = new();
-    
-    public void Add(PostPaymentResponse payment)
+    private readonly ConcurrentDictionary<Guid, PostPaymentResponse> _payments = new();
+    private readonly ConcurrentDictionary<string, PostPaymentResponse> _completed = new();
+    // Used as a concurrent set: .NET has no ConcurrentHashSet, so a ConcurrentDictionary
+    // with a throwaway value is the canonical idiom. Only the keys carry meaning.
+    private readonly ConcurrentDictionary<string, byte> _inFlight = new();
+
+    public bool TryBeginProcessing(string idempotencyKey)
     {
-        Payments.Add(payment);
+        if (_completed.ContainsKey(idempotencyKey))
+        {
+            return false;
+        }
+
+        // TryAdd is atomic: only one concurrent caller can claim an unclaimed key.
+        return _inFlight.TryAdd(idempotencyKey, 0);
     }
 
-    public PostPaymentResponse Get(Guid id)
+    public void Add(PostPaymentResponse payment, string idempotencyKey)
     {
-        return Payments.FirstOrDefault(p => p.Id == id);
+        _payments[payment.Id] = payment;
+        _completed[idempotencyKey] = payment;
+        _inFlight.TryRemove(idempotencyKey, out _);
+    }
+
+    public void CancelProcessing(string idempotencyKey)
+    {
+        _inFlight.TryRemove(idempotencyKey, out _);
+    }
+
+    public PostPaymentResponse? Get(Guid id)
+    {
+        return _payments.TryGetValue(id, out var payment) ? payment : null;
+    }
+
+    public PostPaymentResponse? GetByIdempotencyKey(string idempotencyKey)
+    {
+        return _completed.TryGetValue(idempotencyKey, out var payment) ? payment : null;
     }
 }

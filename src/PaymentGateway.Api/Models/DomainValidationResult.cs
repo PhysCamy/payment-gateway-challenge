@@ -1,4 +1,4 @@
-namespace PaymentGateway.Api.Interfaces;
+namespace PaymentGateway.Api.Models;
 
 /// <summary>
 /// Outcome of Layer 2 (domain) validation. Carries the human-readable reasons a request
