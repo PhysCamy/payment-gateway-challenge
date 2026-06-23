@@ -1,9 +1,12 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
 using PaymentGateway.Api.Controllers;
+using PaymentGateway.Api.Models;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
 
@@ -12,7 +15,10 @@ namespace PaymentGateway.Api.Tests;
 public class PaymentsControllerTests
 {
     private readonly Random _random = new();
-    
+
+    private static readonly JsonSerializerOptions JsonOptions =
+        new() { Converters = { new JsonStringEnumConverter() } };
+
     [Fact]
     public async Task RetrievesAPaymentSuccessfully()
     {
@@ -23,8 +29,8 @@ public class PaymentsControllerTests
             ExpiryYear = _random.Next(2023, 2030),
             ExpiryMonth = _random.Next(1, 12),
             Amount = _random.Next(1, 10000),
-            CardNumberLastFour = _random.Next(1111, 9999),
-            Currency = "GBP"
+            LastFourDigits = _random.Next(1111, 9999).ToString(),
+            Currency = Currency.GBP
         };
 
         var paymentsRepository = new PaymentsRepository();
@@ -38,7 +44,7 @@ public class PaymentsControllerTests
 
         // Act
         var response = await client.GetAsync($"/api/Payments/{payment.Id}");
-        var paymentResponse = await response.Content.ReadFromJsonAsync<PostPaymentResponse>();
+        var paymentResponse = await response.Content.ReadFromJsonAsync<PostPaymentResponse>(JsonOptions);
         
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
