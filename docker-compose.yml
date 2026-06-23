@@ -9,8 +9,8 @@ services:
     ports:
       - "5067:5067"
     environment:
-      # Development enables Swagger UI (and dev-style error pages) inside the container.
-      - ASPNETCORE_ENVIRONMENT=Development
+      # Production disables Swagger UI and uses production-style error pages.
+      - ASPNETCORE_ENVIRONMENT=Production
       # Bind to all interfaces inside the container on the port Prometheus scrapes.
       - ASPNETCORE_URLS=http://+:5067
       # Reach the other services by their compose service names, not localhost.

@@ -30,8 +30,17 @@ Feel free to change the structure of the solution, use a different test library 
 docker-compose up --build
 ```
 
-This builds and starts the entire stack — the API, the bank simulator, and the observability
-services (Prometheus, Loki, Grafana). Add `-d` to run it detached. The API is available at:
+This builds and starts the entire stack. Add `-d` to run it detached.
+
+| Container | Image | Ports | Purpose |
+|---|---|---|---|
+| `payment-gateway` | built from `Dockerfile` | `5067` | The API itself |
+| `bank_simulator` | `mountebank:2.8.1` | `8080` (API), `2525` (admin) | Stubbed acquiring bank, configured via `imposters/` |
+| `prometheus` | `prom/prometheus:v2.51.0` | `9090` | Scrapes and stores metrics from the gateway |
+| `loki` | `grafana/loki:2.9.0` | `3100` | Receives and stores structured logs pushed by the gateway |
+| `grafana` | `grafana/grafana:10.4.0` | `3000` | Dashboards over Prometheus metrics and Loki logs |
+
+The API is available at:
 
 - API: `http://localhost:5067`
 - Metrics: `http://localhost:5067/metrics`
@@ -54,6 +63,11 @@ Run this way the API also exposes HTTPS and Swagger:
 - HTTP: `http://localhost:5067`
 - HTTPS: `https://localhost:7092`
 - Swagger UI: `https://localhost:7092/swagger`
+
+> **Swagger is only available in Development mode.** `dotnet run` picks up
+> `Properties/launchSettings.json`, which sets `ASPNETCORE_ENVIRONMENT=Development`
+> automatically, so Swagger is enabled with no extra steps. The Docker image runs in
+> `Production` mode, so the `/swagger` endpoint is not exposed there.
 
 For Prometheus to scrape the host process, point its target at `host.docker.internal:5067`
 in `prometheus/prometheus.yml` (see the note in that file).

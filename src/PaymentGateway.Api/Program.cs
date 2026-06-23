@@ -39,6 +39,9 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Liveness probe for cloud load balancers: 200 if the process and pipeline are responsive.
+builder.Services.AddHealthChecks();
+
 builder.Services.AddSingleton<IPaymentsRepository, PaymentsRepository>();
 builder.Services.AddSingleton<IPaymentRequestValidator, PostPaymentRequestValidator>();
 
@@ -57,12 +60,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Redirect everything to HTTPS except the Prometheus scrape endpoint: Prometheus scrapes
-// /metrics over plain HTTP and does not follow a redirect to the dev HTTPS certificate.
-app.UseWhen(
-    context => !context.Request.Path.StartsWithSegments("/metrics"),
-    https => https.UseHttpsRedirection());
-
 // Emit one structured log line per HTTP request (method, path, status, elapsed) to Loki.
 app.UseSerilogRequestLogging();
 
@@ -72,6 +69,9 @@ app.UseHttpMetrics();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// GET /health — liveness probe for cloud orchestrators. No auth, no dependency checks.
+app.MapHealthChecks("/health");
 
 // GET /metrics — scraped by Prometheus. No card data flows through here.
 app.MapMetrics();

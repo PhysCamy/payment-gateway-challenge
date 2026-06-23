@@ -11,6 +11,14 @@ RUN dotnet publish src/PaymentGateway.Api/PaymentGateway.Api.csproj \
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
+
+# curl is not in the base image but is needed for the container health check below.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 EXPOSE 5067
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:5067/health || exit 1
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "PaymentGateway.Api.dll"]
