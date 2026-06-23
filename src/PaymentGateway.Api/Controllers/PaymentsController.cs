@@ -3,7 +3,6 @@
 using PaymentGateway.Api.Interfaces;
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
-using PaymentGateway.Api.Services;
 
 namespace PaymentGateway.Api.Controllers;
 
@@ -11,11 +10,11 @@ namespace PaymentGateway.Api.Controllers;
 [ApiController]
 public class PaymentsController : Controller
 {
-    private readonly PaymentsRepository _paymentsRepository;
+    private readonly IPaymentsRepository _paymentsRepository;
     private readonly IPaymentRequestValidator _validator;
 
     public PaymentsController(
-        PaymentsRepository paymentsRepository,
+        IPaymentsRepository paymentsRepository,
         IPaymentRequestValidator validator)
     {
         _paymentsRepository = paymentsRepository;

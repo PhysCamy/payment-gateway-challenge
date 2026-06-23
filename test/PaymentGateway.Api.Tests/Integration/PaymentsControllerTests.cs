@@ -31,7 +31,7 @@ public class PaymentsControllerTests
         };
 
         var paymentsRepository = new PaymentsRepository();
-        paymentsRepository.Add(payment);
+        paymentsRepository.Add(payment, Guid.NewGuid().ToString());
 
         var client = new PaymentGatewayApplicationFactory(paymentsRepository).CreateClient();
 

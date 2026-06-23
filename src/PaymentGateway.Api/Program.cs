@@ -20,8 +20,14 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<PaymentsRepository>();
+builder.Services.AddSingleton<IPaymentsRepository, PaymentsRepository>();
 builder.Services.AddSingleton<IPaymentRequestValidator, PostPaymentRequestValidator>();
+
+builder.Services.AddHttpClient<IBankService, BankService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["BankSimulator:BaseUrl"]!);
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 
 var app = builder.Build();
 
