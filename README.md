@@ -260,3 +260,13 @@ only `last_four_digits`.
 
 The Loki endpoint defaults to `http://localhost:3100`; override it with the
 `Observability__LokiUri` environment variable (or the `Observability:LokiUri` config key).
+
+## Known Gaps
+
+I've intentionally left the following out of this project:
+- Automated pipelines for testing and deployment
+- Linting
+
+If I'd had more time, I would have added the following:
+- Performance tests using BenchmarkDotNet
+- Rate limiting on the payment gateway API endpoints
