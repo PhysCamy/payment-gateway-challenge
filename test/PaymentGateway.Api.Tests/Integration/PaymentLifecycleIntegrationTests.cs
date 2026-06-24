@@ -15,12 +15,12 @@ namespace PaymentGateway.Api.Tests.Integration;
 /// Full-pipeline lifecycle tests that exercise <c>PaymentsController</c> against the REAL
 /// Mountebank bank simulator on <c>http://localhost:8080</c> — <see cref="PaymentGateway.Api.Interfaces.IBankService"/>
 /// is not mocked. Run <c>docker-compose up -d</c> before this suite. Marked
-/// <c>Category=Integration</c> so it is excluded from the default unit run
-/// (<c>dotnet test --filter "Category!=Integration"</c>). Each test gets a fresh
+/// <c>Category=RequiresBankSimulator</c> so it is excluded from the default unit run
+/// (<c>dotnet test --filter "Category!=RequiresBankSimulator"</c>). Each test gets a fresh
 /// <see cref="PaymentsRepository"/> so no state leaks between tests, and every POST carries a
 /// unique <c>Idempotency-Key</c>.
 /// </summary>
-[Trait("Category", "Integration")]
+[Trait("Category", "RequiresBankSimulator")]
 public class PaymentLifecycleIntegrationTests
 {
     private const string AuthorizedCard = "2222405343248877"; // last digit 7 → authorized

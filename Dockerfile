@@ -21,4 +21,9 @@ EXPOSE 5067
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:5067/health || exit 1
 COPY --from=build /app/publish .
+
+# Run as a non-root user; most cloud platforms reject or warn on root containers.
+RUN adduser --disabled-password --gecos "" appuser
+USER appuser
+
 ENTRYPOINT ["dotnet", "PaymentGateway.Api.dll"]

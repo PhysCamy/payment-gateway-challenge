@@ -48,7 +48,8 @@ builder.Services.AddSingleton<IPaymentRequestValidator, PostPaymentRequestValida
 builder.Services.AddHttpClient<IBankService, BankService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["BankSimulator:BaseUrl"]!);
-    client.Timeout = TimeSpan.FromSeconds(10);
+    client.Timeout = TimeSpan.FromSeconds(
+        builder.Configuration.GetValue<int>("BankSimulator:TimeoutSeconds", 10));
 });
 
 var app = builder.Build();

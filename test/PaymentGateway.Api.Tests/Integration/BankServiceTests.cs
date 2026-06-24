@@ -11,7 +11,7 @@ namespace PaymentGateway.Api.Tests.Integration;
 /// the <see cref="HttpClient"/> would only prove the stub returns what it was told to;
 /// these tests verify the actual request shape and the simulator's real responses.
 /// </summary>
-[Trait("Category", "Integration")]
+[Trait("Category", "RequiresBankSimulator")]
 public class BankServiceTests
 {
     private const string AuthorizedCard = "2222405343248877"; // ends 7 → authorized
