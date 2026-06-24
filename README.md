@@ -1,21 +1,6 @@
-# Instructions for candidates
+# Payment Gateway
 
-This is the .NET version of the Payment Gateway challenge. If you haven't already read this [README.md](https://github.com/cko-recruitment/) on the details of this exercise, please do so now. 
-
-## Template structure
-```
-src/
-    PaymentGateway.Api - a skeleton ASP.NET Core Web API
-test/
-    PaymentGateway.Api.Tests - an empty xUnit test project
-imposters/ - contains the bank simulator configuration. Don't change this
-
-.editorconfig - don't change this. It ensures a consistent set of rules for submissions when reformatting code
-docker-compose.yml - configures the bank simulator
-PaymentGateway.sln
-```
-
-Feel free to change the structure of the solution, use a different test library etc.
+A REST API that allows merchants to process card payments and retrieve payment details. The gateway sits between merchants and an acquiring bank simulator, masking card data and providing a consistent interface.
 
 ## Running the application
 
@@ -44,6 +29,7 @@ The API is available at:
 
 - API: `http://localhost:5067`
 - Metrics: `http://localhost:5067/metrics`
+- Health: `http://localhost:5067/health`
 
 (`--build` is only needed when the API source has changed; plain `docker-compose up` reuses
 the existing image.)
@@ -86,6 +72,148 @@ To run the integration tests as well, start the bank simulator first
 ```bash
 dotnet test
 ```
+
+---
+
+## API Reference
+
+### POST /api/payments — Process a payment
+
+Validates the payment request, forwards it to the acquiring bank, persists the result, and returns the outcome.
+
+#### Request
+
+**Headers**
+
+| Header | Type | Required |
+|---|---|---|
+| `Idempotency-Key` | string (UUID) | Yes — `400 Bad Request` if absent |
+
+**Body**
+
+```json
+{
+  "card_number": "2222405343248877",
+  "expiry_month": 4,
+  "expiry_year": 2025,
+  "currency": "GBP",
+  "amount": 100,
+  "cvv": "123"
+}
+```
+
+| Field | Type | Rules |
+|---|---|---|
+| `card_number` | string | Required; 14–19 digits; must pass the Luhn check |
+| `expiry_month` | integer | Required; 1–12 |
+| `expiry_year` | integer | Required; combined month + year must not be in the past |
+| `currency` | string | Required; one of `USD`, `GBP`, `EUR` |
+| `amount` | integer | Required; positive integer in minor currency units (e.g. pence, cents) |
+| `cvv` | string | Required; 3–4 digits |
+
+#### Responses
+
+**200 OK — Authorized**
+```json
+{
+  "id": "dc71b257-ee60-4b1b-900c-b47fc5833e07",
+  "status": "Authorized",
+  "last_four_digits": "8877",
+  "expiry_month": 4,
+  "expiry_year": 2025,
+  "currency": "GBP",
+  "amount": 100
+}
+```
+
+**200 OK — Declined**
+```json
+{
+  "id": "dc71b257-ee60-4b1b-900c-b47fc5833e07",
+  "status": "Declined",
+  "last_four_digits": "8877",
+  "expiry_month": 4,
+  "expiry_year": 2025,
+  "currency": "GBP",
+  "amount": 100
+}
+```
+
+**400 Bad Request — schema or header validation failure**
+
+Returns ASP.NET's default `ValidationProblemDetails` response. No payment ID is generated and nothing is persisted.
+
+**400 Bad Request — domain validation failure**
+```json
+{
+  "status": "Rejected",
+  "errors": [
+    "card_number is not a valid card number.",
+    "cvv must be 3 or 4 characters long."
+  ]
+}
+```
+
+No payment ID is generated and nothing is persisted. The `errors` array lists every rule that the request violated.
+
+**409 Conflict — idempotency key already in flight**
+
+A request with the same `Idempotency-Key` is currently being processed. Retry after a short delay. No payment ID is generated.
+
+**502 Bad Gateway — bank unreachable**
+
+The bank simulator was unavailable (or returned a 503). The payment was not processed and nothing is persisted. Retry with the same `Idempotency-Key` — the key is released after a 502 so resubmission proceeds normally.
+
+---
+
+### GET /api/payments/{id} — Retrieve a payment
+
+Returns the stored outcome of a previously processed payment.
+
+#### Path parameter
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | GUID | The payment identifier returned at processing time |
+
+#### Responses
+
+**200 OK**
+```json
+{
+  "id": "dc71b257-ee60-4b1b-900c-b47fc5833e07",
+  "status": "Authorized",
+  "last_four_digits": "8877",
+  "expiry_month": 4,
+  "expiry_year": 2025,
+  "currency": "GBP",
+  "amount": 100
+}
+```
+
+**404 Not Found** — no payment exists for the given ID.
+
+---
+
+### GET /health — Liveness probe
+
+Returns `200 OK` if the process and pipeline are responsive. Suitable for use as a container liveness or readiness probe.
+
+---
+
+## Idempotency
+
+`POST /api/payments` supports idempotency via a merchant-supplied `Idempotency-Key` header. Generate a UUID per distinct payment attempt and reuse it on retries. The gateway ensures the bank is contacted exactly once per key — even if the same request is submitted multiple times.
+
+| Outcome | Key state after response | Behaviour on retry |
+|---|---|---|
+| Authorized or Declined | Completed | Cached response returned immediately; bank not contacted |
+| Rejected (domain validation) | Released | Retry with same key proceeds normally |
+| 502 Bad Gateway | Released | Retry with same key proceeds normally |
+
+Concurrent requests with the same key: one proceeds to the bank, the other receives `409 Conflict` and should retry after a short delay.
+
+---
 
 ## Observability
 
