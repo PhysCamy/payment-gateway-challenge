@@ -15,15 +15,18 @@ public class PaymentsController : Controller
     private readonly IPaymentsRepository _paymentsRepository;
     private readonly IPaymentRequestValidator _validator;
     private readonly IBankService _bankService;
+    private readonly ILogger<PaymentsController> _logger;
 
     public PaymentsController(
         IPaymentsRepository paymentsRepository,
         IPaymentRequestValidator validator,
-        IBankService bankService)
+        IBankService bankService,
+        ILogger<PaymentsController> logger)
     {
         _paymentsRepository = paymentsRepository;
         _validator = validator;
         _bankService = bankService;
+        _logger = logger;
     }
 
     [HttpGet("{id:guid}")]
@@ -68,6 +71,8 @@ public class PaymentsController : Controller
             var validation = _validator.Validate(request);
             if (!validation.IsValid)
             {
+                // No structured fields — the reasons may reference card data we must not log.
+                _logger.LogInformation("Payment rejected by domain validation.");
                 _paymentsRepository.CancelProcessing(idempotencyKey);
                 return BadRequest(new RejectedPaymentResponse(validation.Errors));
             }

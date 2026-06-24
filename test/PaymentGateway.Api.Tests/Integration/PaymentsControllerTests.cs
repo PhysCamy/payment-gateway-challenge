@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 using PaymentGateway.Api.Models;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
@@ -30,7 +32,7 @@ public class PaymentsControllerTests
             Currency = Currency.GBP
         };
 
-        var paymentsRepository = new PaymentsRepository();
+        var paymentsRepository = new PaymentsRepository(NullLogger<PaymentsRepository>.Instance);
         paymentsRepository.Add(payment, Guid.NewGuid().ToString());
 
         var client = new PaymentGatewayApplicationFactory(paymentsRepository).CreateClient();

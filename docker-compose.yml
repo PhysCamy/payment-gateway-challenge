@@ -1,6 +1,23 @@
-version: "3.8"
-
 services:
+  payment-gateway:
+    container_name: payment-gateway
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5067:5067"
+    environment:
+      # Production disables Swagger UI and uses production-style error pages.
+      - ASPNETCORE_ENVIRONMENT=Production
+      # Bind to all interfaces inside the container on the port Prometheus scrapes.
+      - ASPNETCORE_URLS=http://+:5067
+      # Reach the other services by their compose service names, not localhost.
+      - BankSimulator__BaseUrl=http://bank_simulator:8080
+      - Observability__LokiUri=http://loki:3100
+    depends_on:
+      - bank_simulator
+      - loki
+
   bank_simulator:
     container_name: bank_simulator
     image: bbyars/mountebank:2.8.1
